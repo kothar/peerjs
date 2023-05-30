@@ -17,6 +17,7 @@ import type {
 	PeerJSOption,
 	CallOption,
 } from "./optionInterfaces";
+import { BaseConnection } from './baseconnection';
 
 class PeerOptions implements PeerJSOption {
 	/**
@@ -370,6 +371,16 @@ export class Peer extends EventEmitter<PeerEvents> {
 					PeerErrorType.PeerUnavailable,
 					`Could not connect to peer ${peerId}`,
 				);
+                const peerConnections = this._connections.get(peerId);
+                if (peerConnections) {
+                    peerConnections.forEach(conn => {
+                        (conn as BaseConnection<any>).emit('error', new PeerError(
+                            PeerErrorType.PeerUnavailable,
+                            `Could not connect to peer ${peerId}`));
+                    });
+                }
+                this._cleanupPeer(peerId);
+                this._connections.delete(peerId);
 				break;
 			case ServerMessageType.Offer: {
 				// we should consider switching this to CALL/CONNECT, but this is the least breaking option.
